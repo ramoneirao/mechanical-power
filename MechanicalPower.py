@@ -1,14 +1,15 @@
 import sys
 from PyQt5.QtWidgets import (
-    QApplication, QMainWindow, QLabel, QLineEdit, QPushButton, QVBoxLayout, QHBoxLayout, QWidget, QMessageBox
+    QApplication, QMainWindow, QLabel, QLineEdit, QPushButton, QVBoxLayout, 
+    QHBoxLayout, QWidget, QMessageBox
 )
 from PyQt5.QtCore import Qt
 
-class PotenciaGattinoniApp(QMainWindow):
+class MechanicalPower(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Cálculo de Potência Mecânica (Gattinoni)")
-        self.setGeometry(100, 100, 500, 330)
+        self.setWindowTitle("Cálculo de Potência Mecânica")
+        self.setGeometry(100, 100, 520, 360)
 
         # Criando os widgets
         self.fr_label = QLabel("FR (rpm):")
@@ -41,8 +42,9 @@ class PotenciaGattinoniApp(QMainWindow):
 
         self.result_label = QLabel("")
         self.result_label.setAlignment(Qt.AlignCenter)
+        self.result_label.setStyleSheet("font-size: 14px; font-weight: bold;")
 
-        # Layouts
+        # Layout
         layout = QVBoxLayout()
         form_layouts = [
             (self.fr_label, self.fr_input),
@@ -69,6 +71,36 @@ class PotenciaGattinoniApp(QMainWindow):
         container.setLayout(layout)
         self.setCentralWidget(container)
 
+        # Aplica estilo
+        self.setStyleSheet("""
+            QWidget {
+                background-color: #2b2b2b;
+                color: #f0f0f0;
+                font-family: Arial;
+                font-size: 13px;
+            }
+            QLineEdit {
+                padding: 5px;
+                border: 1px solid #555;
+                border-radius: 6px;
+                background: #3c3f41;
+                color: #f0f0f0;
+            }
+            QPushButton {
+                padding: 8px;
+                border-radius: 8px;
+                background-color: #0078d7;
+                color: white;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #005a9e;
+            }
+            QLabel {
+                font-weight: bold;
+            }
+        """)
+
     def calcular_ppico(self):
         try:
             raw = float(self.raw_input.text().replace(',', '.'))
@@ -83,7 +115,6 @@ class PotenciaGattinoniApp(QMainWindow):
         self.result_label.setText(f"PPico calculado: {ppico:.2f} cmH₂O")
 
     def calcular_mp(self):
-        # Checando e lendo entradas
         try:
             fr = float(self.fr_input.text().replace(',', '.'))
             vt = float(self.vt_input.text().replace(',', '.'))
@@ -93,7 +124,6 @@ class PotenciaGattinoniApp(QMainWindow):
             QMessageBox.warning(self, "Erro", "Preencha FR, Vt, Pplat e PEEP corretamente.")
             return
 
-        # PPico: pode estar vazio -> tenta calcular se há raw/fluxo
         ppico_text = self.ppico_input.text().replace(',', '.')
         ppico = None
         if ppico_text == '':
@@ -102,7 +132,7 @@ class PotenciaGattinoniApp(QMainWindow):
                 fluxo = float(self.flow_input.text().replace(',', '.'))
                 ppico = (raw * fluxo / 60) + pplat
             except ValueError:
-                QMessageBox.warning(self, "Erro", "Informe PPico ou Raw, Fluxo e Pplat para calcular automaticamente.")
+                QMessageBox.warning(self, "Erro", "Informe PPico ou Raw, Fluxo e Pplat.")
                 return
         else:
             try:
@@ -111,7 +141,6 @@ class PotenciaGattinoniApp(QMainWindow):
                 QMessageBox.warning(self, "Erro", "Valor de PPico inválido.")
                 return
 
-        # Cálculo principal
         try:
             delta = ppico - pplat - (peep * 0.5)
             mp = 0.098 * fr * vt * delta
@@ -125,6 +154,6 @@ class PotenciaGattinoniApp(QMainWindow):
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
-    window = PotenciaGattinoniApp()
+    window = MechanicalPower()
     window.show()
     sys.exit(app.exec_())
