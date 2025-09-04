@@ -1,15 +1,20 @@
 import sys
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QLabel, QLineEdit, QPushButton, QVBoxLayout, 
-    QHBoxLayout, QWidget, QMessageBox
+    QHBoxLayout, QWidget, QMessageBox, QSizePolicy
 )
 from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QIcon
+
+   
 
 class MechanicalPower(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Cálculo de Potência Mecânica")
         self.setGeometry(100, 100, 520, 360)
+
+        self.setWindowIcon(QIcon('favicon/lungs.ico'))
 
         # Criando os widgets
         self.fr_label = QLabel("FR (rpm):")
@@ -24,18 +29,11 @@ class MechanicalPower(QMainWindow):
         self.peep_label = QLabel("PEEP (cmH₂O):")
         self.peep_input = QLineEdit()
 
-        self.ppico_label = QLabel("PPico (cmH₂O):")
-        self.ppico_input = QLineEdit()
-        self.ppico_input.setPlaceholderText("Opcional")
-
         self.raw_label = QLabel("Raw (cmH₂O/L/s):")
         self.raw_input = QLineEdit()
 
         self.flow_label = QLabel("Fluxo (L/min):")
         self.flow_input = QLineEdit()
-
-        self.calc_ppico_btn = QPushButton("Calcular PPico")
-        self.calc_ppico_btn.clicked.connect(self.calcular_ppico)
 
         self.calc_mp_btn = QPushButton("Calcular Potência Mecânica")
         self.calc_mp_btn.clicked.connect(self.calcular_mp)
@@ -51,25 +49,38 @@ class MechanicalPower(QMainWindow):
             (self.vt_label, self.vt_input),
             (self.pplat_label, self.pplat_input),
             (self.peep_label, self.peep_input),
-            (self.ppico_label, self.ppico_input),
             (self.raw_label, self.raw_input),
             (self.flow_label, self.flow_input),
         ]
+
+        max_label_width = max(label.sizeHint().width() for label, _ in form_layouts)
+
+        max_label_width = max(label.sizeHint().width() for label, _ in form_layouts)
+
         for label, edit in form_layouts:
             h = QHBoxLayout()
+            label.setFixedWidth(max_label_width + 30)  # Adiciona uma margem extra
+            label.setAlignment(Qt.AlignVCenter | Qt.AlignRight)  # Centraliza na vertical e alinha à direita
             h.addWidget(label)
             h.addWidget(edit)
             layout.addLayout(h)
 
-        btn_layout = QHBoxLayout()
-        btn_layout.addWidget(self.calc_ppico_btn)
-        btn_layout.addWidget(self.calc_mp_btn)
-        layout.addLayout(btn_layout)
+
+        layout.addWidget(self.calc_mp_btn)
         layout.addWidget(self.result_label)
 
         container = QWidget()
         container.setLayout(layout)
         self.setCentralWidget(container)
+
+        # Alinhamento central dos labels
+        self.fr_label.setAlignment(Qt.AlignCenter)
+        self.vt_label.setAlignment(Qt.AlignCenter)
+        self.pplat_label.setAlignment(Qt.AlignCenter)
+        self.peep_label.setAlignment(Qt.AlignCenter)
+        self.raw_label.setAlignment(Qt.AlignCenter)
+        self.flow_label.setAlignment(Qt.AlignCenter)
+
 
         # Aplica estilo
         self.setStyleSheet("""
@@ -101,47 +112,20 @@ class MechanicalPower(QMainWindow):
             }
         """)
 
-    def calcular_ppico(self):
-        try:
-            raw = float(self.raw_input.text().replace(',', '.'))
-            fluxo = float(self.flow_input.text().replace(',', '.'))
-            pplat = float(self.pplat_input.text().replace(',', '.'))
-        except ValueError:
-            QMessageBox.warning(self, "Erro", "Preencha Raw, Fluxo e Pplat corretamente.")
-            return
-
-        ppico = (raw * fluxo / 60) + pplat
-        self.ppico_input.setText(f"{ppico:.2f}")
-        self.result_label.setText(f"PPico calculado: {ppico:.2f} cmH₂O")
-
     def calcular_mp(self):
         try:
             fr = float(self.fr_input.text().replace(',', '.'))
             vt = float(self.vt_input.text().replace(',', '.'))
             pplat = float(self.pplat_input.text().replace(',', '.'))
             peep = float(self.peep_input.text().replace(',', '.'))
+            raw = float(self.raw_input.text().replace(',', '.'))
+            fluxo = float(self.flow_input.text().replace(',', '.'))
         except ValueError:
-            QMessageBox.warning(self, "Erro", "Preencha FR, Vt, Pplat e PEEP corretamente.")
+            QMessageBox.warning(self, "Erro", "Preencha todos os campos corretamente.")
             return
 
-        ppico_text = self.ppico_input.text().replace(',', '.')
-        ppico = None
-        if ppico_text == '':
-            try:
-                raw = float(self.raw_input.text().replace(',', '.'))
-                fluxo = float(self.flow_input.text().replace(',', '.'))
-                ppico = (raw * fluxo / 60) + pplat
-            except ValueError:
-                QMessageBox.warning(self, "Erro", "Informe PPico ou Raw, Fluxo e Pplat.")
-                return
-        else:
-            try:
-                ppico = float(ppico_text)
-            except ValueError:
-                QMessageBox.warning(self, "Erro", "Valor de PPico inválido.")
-                return
-
         try:
+            ppico = (raw * fluxo / 60) + pplat
             delta = ppico - pplat - (peep * 0.5)
             mp = 0.098 * fr * vt * delta
         except Exception:
@@ -149,7 +133,8 @@ class MechanicalPower(QMainWindow):
             return
 
         self.result_label.setText(
-            f"PPico usado: {ppico:.2f} cmH₂O\nPotência Mecânica (MP): {mp:.2f} J/min"
+            # f"PPico calculado: {ppico:.2f} cmH₂O\nPotência Mecânica (MP): {mp:.2f} J/min"
+            f"Potência Mecânica (MP): {mp:.2f} J/min"
         )
 
 if __name__ == '__main__':
